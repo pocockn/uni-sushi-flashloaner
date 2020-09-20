@@ -11,5 +11,14 @@
     "eslint": "^7.9.0",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedrobergamini/uni-sushi-flashloaner"
+  },
+  "keywords": ["defi", "ethereum", "flashloans"],
+  "author": "Pedro Bergamini",
+  "bugs": {
+    "url": "https://github.com/pedrobergamini/uni-sushi-flashloaner/issues"
   }
 }
