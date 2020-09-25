@@ -77,6 +77,7 @@ const runBot = async () => {
       console.log(`SUSHISWAP PRICE ${priceSushiswap}`);
       console.log(`PROFITABLE? ${shouldTrade}`);
       console.log(`CURRENT SPREAD: ${(priceSushiswap / priceUniswap - 1) * 100}%`);
+      console.log(`ABSLUTE SPREAD: ${spread}`);
 
       if (!shouldTrade) return;
 
@@ -88,6 +89,15 @@ const runBot = async () => {
       );
 
       const gasPrice = await wallet.getGasPrice();
+
+      const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(gasLimit)));
+
+      const shouldSendTx = shouldStartEth
+        ? (gasCost / ETH_TRADE) < spread
+        : (gasCost / (DAI_TRADE / priceUniswap)) < spread;
+
+      // don't trade if gasCost is higher than the spread
+      if (!shouldSendTx) return;
 
       const options = {
         gasPrice,
