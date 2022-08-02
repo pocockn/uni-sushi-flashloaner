@@ -5,9 +5,12 @@ const tokens = [
   { name: 'UNI', address: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984', decimal: 18 },
   { name: 'WBTC', address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', decimal: 8 },
   { name: 'YFI', address: '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e', decimal: 18 },
-  // TODO: Work out why SPELL and CVX error when attempting to get the price.
-  // { name: "SPELL", address: '0x090185f2135308BaD17527004364eBcC2D37e5F6', decimal :  }
-  // { name: "CVX", address: '0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B', decimal :  },
+  { name: 'SPELL', address: '0x090185f2135308BaD17527004364eBcC2D37e5F6', decimal: 18 },
+  { name: 'CVX', address: '0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B', decimal: 18 },
+];
+
+const testTokens = [
+  { name: 'USDC', address: '0xd87ba7a50b2e7e660f678a895e4b72e7cb4ccd9c', decimal: 18 },
 ];
 
 const swapFrom = {
@@ -16,5 +19,6 @@ const swapFrom = {
 
 module.exports = {
   tokens,
+  testTokens,
   swapFrom,
 };
