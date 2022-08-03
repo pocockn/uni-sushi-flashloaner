@@ -18,10 +18,11 @@ const provider = new ethers.providers.InfuraProvider('goerli', process.env.INFUR
 
 const wallet = new ethers.Wallet(privateKey, provider);
 
-// Work out if we can fetch these values from Uniswap themselves.
+// TODO: Work out if we can fetch these values from Uniswap themselves.
 // These are the amounts we try to swap. This guy gets the amounts using this
 // https://github.com/6eer/uniswap-sushiswap-arbitrage-bot/blob/300db222e20070fb3ed488cfb0a6dcb476aea833/src/bot_flashswap.js#L110
 const ETH_TRADE = 10;
+// TODO: As we aren't swapping DAI I think this needs be set based on the token we're swapping with WETH.
 const DAI_TRADE = 3500;
 
 const runBot = async () => {
@@ -68,6 +69,7 @@ const runBot = async () => {
         const shouldStartEth = priceUniswap < priceSushiswap;
         const spread = Math.abs((priceSushiswap / priceUniswap - 1) * 100) - 0.6;
 
+        // TODO: Understand this calculation a bit better
         const shouldTrade = spread > (
           (shouldStartEth ? ETH_TRADE : DAI_TRADE)
           / Number(
@@ -109,7 +111,7 @@ const runBot = async () => {
         };
 
         const tx = await sushi.swap(
-          !shouldStartEth ? 4000 : 0,
+          !shouldStartEth ? DAI_TRADE : 0,
           shouldStartEth ? ETH_TRADE : 0,
           flashLoanerAddress,
           ethers.utils.toUtf8Bytes('1'), options,
