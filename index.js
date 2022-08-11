@@ -1,30 +1,22 @@
-// make sure to test your own strategies, do not use this version in production
 require('dotenv').config();
 
 const privateKey = process.env.PRIVATE_KEY;
-// your contract address
+// the address that we deployed the smart contract to - 0x4Aec689A464ba3676Eb04ec1c7278819CB9B8521
 const flashLoanerAddress = process.env.FLASH_LOANER;
 
 const { ethers } = require('ethers');
 
-// uni/sushiswap ABIs
+// Uniswap / Sushiswap ABIs
 const UniswapV2Pair = require('./abis/IUniswapV2Pair.json');
 const UniswapV2Factory = require('./abis/IUniswapV2Factory.json');
 const addresses = require('./addresses/ethereum');
 
-// use your own Infura node in production
+// Setup up the Infura provider for use when communicating with Ethereum nodes
 // const provider = new ethers.providers.InfuraProvider('mainnet', process.env.INFURA_KEY);
 const provider = new ethers.providers.InfuraProvider('goerli', process.env.INFURA_KEY);
 
+// Set up our wallet with the private key in `.env` and our Infura provider
 const wallet = new ethers.Wallet(privateKey, provider);
-
-// TODO: Work out if we can fetch these values from Uniswap themselves.
-// These are the amounts we try to swap. This guy gets the amounts using this
-// https://github.com/6eer/uniswap-sushiswap-arbitrage-bot/blob/300db222e20070fb3ed488cfb0a6dcb476aea833/src/bot_flashswap.js#L110
-const ETH_TRADE = 0.01;
-// eslint-disable-next-line max-len
-// TODO: As we aren't swapping DAI I think this needs be set based on the token we're swapping with WETH.
-const DAI_TRADE = 100;
 
 const runBot = async () => {
   const sushiFactory = new ethers.Contract(
@@ -40,6 +32,7 @@ const runBot = async () => {
   // const mainnet wethAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
   const wethAddress = '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6';
 
+  // perform function on each new block
   provider.on('block', async (blockNumber) => {
     try {
       console.log(blockNumber);
@@ -94,7 +87,6 @@ const runBot = async () => {
         const gasLimit = 100000;
 
         const gasPrice = await wallet.getGasPrice();
-
         const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(4250000006)));
 
         const profitAfterTxFees = profit - gasCost - fees;
@@ -112,8 +104,8 @@ const runBot = async () => {
         // TODO: Work out how much to swap here? If we find there is a profitable trade
         // we need to figure out the amount to swap.
         const tx = await sushi.swap(
-          !profitable ? DAI_TRADE : 0,
-          profitable ? ETH_TRADE : 0,
+          0,
+          1,
           flashLoanerAddress,
           ethers.utils.toUtf8Bytes('1'), options,
         );
