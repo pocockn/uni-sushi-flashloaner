@@ -21,9 +21,10 @@ const wallet = new ethers.Wallet(privateKey, provider);
 // TODO: Work out if we can fetch these values from Uniswap themselves.
 // These are the amounts we try to swap. This guy gets the amounts using this
 // https://github.com/6eer/uniswap-sushiswap-arbitrage-bot/blob/300db222e20070fb3ed488cfb0a6dcb476aea833/src/bot_flashswap.js#L110
-const ETH_TRADE = 10;
+const ETH_TRADE = 0.01;
+// eslint-disable-next-line max-len
 // TODO: As we aren't swapping DAI I think this needs be set based on the token we're swapping with WETH.
-const DAI_TRADE = 3500;
+const DAI_TRADE = 100;
 
 const runBot = async () => {
   const sushiFactory = new ethers.Contract(
@@ -63,26 +64,24 @@ const runBot = async () => {
         const reserve0Uni = Number(ethers.utils.formatUnits(uniswapReserves[0], token.decimal));
         const reserve1Uni = Number(ethers.utils.formatUnits(uniswapReserves[1], token.decimal));
 
+        // Price calculation example, in a pool with 2,000,000 DAI and 1,000 WETH,
+        // the market price for WETH is $2,000. 2,000,000 / 1,000
         const priceUniswap = reserve0Uni / reserve1Uni;
         const priceSushiswap = reserve0Sushi / reserve1Sushi;
 
-        const shouldStartEth = priceUniswap < priceSushiswap;
-        const spread = Math.abs((priceSushiswap / priceUniswap - 1) * 100) - 0.6;
-
-        // TODO: Understand this calculation a bit better
-        const shouldTrade = spread > (
-          (shouldStartEth ? ETH_TRADE : DAI_TRADE)
-          / Number(
-            ethers.utils.formatEther(uniswapReserves[shouldStartEth ? 1 : 0]),
-          ));
+        // Uniswap charges a 0.3% fee on trades. We need 2 trades when performing
+        // the arbitrage so we calculate 0.6%. TODO - Fix this calculation and ensure its correct.
+        const fees = Math.abs((priceSushiswap + priceUniswap * 0.6) / 100);
+        const profitable = (priceUniswap - priceSushiswap) - fees > 0;
+        const profit = priceUniswap - priceSushiswap - fees;
 
         console.log(token.name, ` UNISWAP PRICE ${priceUniswap}`);
-        console.log(token.name, `SUSHISWAP PRICE ${priceSushiswap}`);
-        console.log(token.name, ` PROFITABLE? ${shouldTrade}`);
-        console.log(token.name, ` CURRENT SPREAD: ${(priceSushiswap / priceUniswap - 1) * 100}%`);
-        console.log(token.name, ` ABSOLUTE SPREAD: ${spread}`);
+        console.log(token.name, ` SUSHISWAP PRICE ${priceSushiswap}`);
+        console.log(token.name, ` FEES: ${fees}`);
+        console.log(token.name, ` PROFITABLE? ${profitable}`);
+        console.log(token.name, ` PROFIT ${profit}`);
 
-        if (!shouldTrade) return;
+        if (!profitable) return;
 
         // TODO: Trying to estimate the gas failed so I manually set it below for now
         // const gasLimit = await sushi.estimateGas.swap(
@@ -98,11 +97,12 @@ const runBot = async () => {
 
         const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(4250000006)));
 
-        const shouldSendTx = shouldStartEth
-          ? (gasCost / ETH_TRADE) < spread
-          : (gasCost / (DAI_TRADE / priceUniswap)) < spread;
+        const profitAfterTxFees = profit - gasCost - fees;
+        const shouldSendTx = profitAfterTxFees > 0;
+        // eslint-disable-next-line no-console
+        console.log('Profit left over after TX fees :', profitAfterTxFees);
 
-        // don't trade if gasCost is higher than the spread
+        // don't trade if gasCost makes the trade unprofitable
         if (!shouldSendTx) return;
 
         const options = {
@@ -111,8 +111,8 @@ const runBot = async () => {
         };
 
         const tx = await sushi.swap(
-          !shouldStartEth ? DAI_TRADE : 0,
-          shouldStartEth ? ETH_TRADE : 0,
+          !profitable ? DAI_TRADE : 0,
+          profitable ? ETH_TRADE : 0,
           flashLoanerAddress,
           ethers.utils.toUtf8Bytes('1'), options,
         );
