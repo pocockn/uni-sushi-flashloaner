@@ -6,6 +6,10 @@ const flashLoanerAddress = process.env.FLASH_LOANER;
 
 const { ethers } = require('ethers');
 
+//  Minimum value for constant product for a healthy pool
+const MIN_HEALTHY_POOL = 100000000;
+const QUANTITY_ETH = 0.1;
+
 // Uniswap / Sushiswap ABIs
 const UniswapV2Pair = require('./abis/IUniswapV2Pair.json');
 const UniswapV2Factory = require('./abis/IUniswapV2Factory.json');
@@ -17,6 +21,53 @@ const provider = new ethers.providers.InfuraProvider('goerli', process.env.INFUR
 
 // Set up our wallet with the private key in `.env` and our Infura provider
 const wallet = new ethers.Wallet(privateKey, provider);
+
+function calculatePrice(t1_balance, t2_balance, quantity) {
+  const CONSTANT_PRODUCT = t1_balance * t2_balance;
+  const CURRENT_PRICE = t2_balance / t1_balance;
+
+  // Calculate buy price
+
+  //  How much WETH needs to remain in balance to keep the constant
+  const token1_balance_buy = CONSTANT_PRODUCT / (t2_balance + quantity);
+
+  //  How much WETH goes out to keep the constant
+  const t1_amount_out_buy = t1_balance - token1_balance_buy;
+
+  // Buy price to reflect the balances change
+  const buy_price = quantity / t1_amount_out_buy;
+
+  // Difference of buy price to current price
+  const buy_impact = 1 - (CURRENT_PRICE / buy_price);
+
+  // calculate sell price
+  // How much X to keep the balances constant
+  const token2_balance_buy = CONSTANT_PRODUCT / (t1_balance + quantity);
+
+  // How much X goes out that constant
+  const t2_amount_out_buy = t2_balance + token2_balance_buy;
+
+  // How the X balance reflects with the income WETH
+  const token1_balance_sell = CONSTANT_PRODUCT / (t2_balance - quantity);
+
+  // The proportion of WETH in the new balance:
+  const t1_amount_in_sell = t1_balance + token1_balance_sell;
+
+  // Sell price to reflect the balances change
+  const sell_price = t2_amount_out_buy / t1_amount_in_sell;
+
+  //  Difference of sell price to current price
+  const sell_impact = 1 - (CURRENT_PRICE / sell_price);
+
+  return {
+    currentPrice: CURRENT_PRICE,
+    buyPrice: buy_price,
+    sellPrice: sell_price,
+    buyImpact: buy_impact,
+    sellImpact: sell_impact,
+    constantProduct: CONSTANT_PRODUCT,
+  };
+}
 
 const runBot = async () => {
   const sushiFactory = new ethers.Contract(
@@ -53,26 +104,42 @@ const runBot = async () => {
 
         const reserve0Sushi = Number(ethers.utils.formatUnits(sushiReserves[0], token.decimal));
         const reserve1Sushi = Number(ethers.utils.formatUnits(sushiReserves[1], token.decimal));
+        const sushiswapPriceData = calculatePrice(reserve0Sushi, reserve1Sushi, 0.1);
+        if (sushiswapPriceData.constantProduct <= MIN_HEALTHY_POOL) {
+          console.log('token: ', token.name, ' has an unbalanced pool for at least one token on Sushiswap, unable to arbitrage');
+          return;
+        }
 
         const reserve0Uni = Number(ethers.utils.formatUnits(uniswapReserves[0], token.decimal));
         const reserve1Uni = Number(ethers.utils.formatUnits(uniswapReserves[1], token.decimal));
-
-        // Price calculation example, in a pool with 2,000,000 DAI and 1,000 WETH,
-        // the market price for WETH is $2,000. 2,000,000 / 1,000
-        const priceUniswap = reserve0Uni / reserve1Uni;
-        const priceSushiswap = reserve0Sushi / reserve1Sushi;
+        const uniswapPriceData = calculatePrice(reserve0Uni, reserve1Uni, QUANTITY_ETH);
+        if (uniswapPriceData.constantProduct <= MIN_HEALTHY_POOL) {
+          console.log('token: ', token.name, ' has an unbalanced pool for at least one token on Uniswap, unable to arbitrage');
+          return;
+        }
 
         // Uniswap charges a 0.3% fee on trades. We need 2 trades when performing
         // the arbitrage so we calculate 0.6%. TODO - Fix this calculation and ensure its correct.
-        const fees = Math.abs((priceSushiswap + priceUniswap * 0.6) / 100);
-        const profitable = (priceUniswap - priceSushiswap) - fees > 0;
-        const profit = priceUniswap - priceSushiswap - fees;
+        const fees = Math.abs((uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice * 0.6) / 100);
+        // TODO: Also check the other way around, this currently only checks if we make a profit
+        // buying on Uniswap and selling on Sushiswap.
+        const arbitrage = uniswapPriceData.buyPrice - sushiswapPriceData.sellPrice;
+        if (arbitrage < 0) {
+          console.log('no arbitrage opportunity on ', token.name, ' for quantity ', QUANTITY_ETH, 'ETH');
+          console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
+          console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
+          console.log(token.name, ` PROFIT ${arbitrage}`);
+          return;
+        }
 
-        console.log(token.name, ` UNISWAP PRICE ${priceUniswap}`);
-        console.log(token.name, ` SUSHISWAP PRICE ${priceSushiswap}`);
-        console.log(token.name, ` FEES: ${fees}`);
-        console.log(token.name, ` PROFITABLE? ${profitable}`);
-        console.log(token.name, ` PROFIT ${profit}`);
+        console.log('arbitrage opportunity on ', token.name, ' for quantity ', QUANTITY_ETH, 'ETH');
+        console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
+        console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
+        console.log(token.name, `FEES ${fees}`);
+        console.log(token.name, ` PROFIT ${arbitrage}`);
+
+        const profitable = (uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice) - fees > 0;
+        const profit = uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice - fees;
 
         if (!profitable) return;
 
@@ -87,7 +154,7 @@ const runBot = async () => {
         const gasLimit = 100000;
 
         const gasPrice = await wallet.getGasPrice();
-        const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(4250000006)));
+        const gasCost = Number(ethers.utils.formatEther(gasPrice));
 
         const profitAfterTxFees = profit - gasCost - fees;
         const shouldSendTx = profitAfterTxFees > 0;
@@ -121,8 +188,8 @@ const runBot = async () => {
         if (receipt) {
           console.log(' - Transaction is mined - ' + '\n'
             + 'Transaction Hash:', `${(await tx).hash
-          }\n` + `Block Number: ${
-            (await receipt).blockNumber}\n`
+            }\n` + `Block Number: ${
+              (await receipt).blockNumber}\n`
             + `Navigate to https://goerli.etherscan.io/txn/${
               (await tx).hash}`, 'to see your transaction');
         } else {
