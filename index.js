@@ -123,7 +123,7 @@ const runBot = async () => {
         const fees = Math.abs((uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice * 0.6) / 100);
         // TODO: Also check the other way around, this currently only checks if we make a profit
         // buying on Uniswap and selling on Sushiswap.
-        const arbitrage = uniswapPriceData.buyPrice - sushiswapPriceData.sellPrice;
+        const arbitrage = sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice;
         if (arbitrage < 0) {
           console.log('no arbitrage opportunity on ', token.name, ' for quantity ', QUANTITY_ETH, 'ETH');
           console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
