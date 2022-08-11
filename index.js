@@ -105,7 +105,7 @@ const runBot = async () => {
         // we need to figure out the amount to swap.
         const tx = await sushi.swap(
           0,
-          1,
+          ethers.utils.parseEther('0.1'),
           flashLoanerAddress,
           ethers.utils.toUtf8Bytes('1'), options,
         );
@@ -113,7 +113,21 @@ const runBot = async () => {
         console.log('ARBITRAGE EXECUTED! PENDING TX TO BE MINED');
         console.log(tx);
 
-        await tx.wait();
+        // eslint-disable-next-line max-len
+        // Resolves to the TransactionReceipt once the transaction has been included in the chain for x confirms blocks.
+        const receipt = (await tx).wait();
+
+        // Logs the information about the transaction it has been mined.
+        if (receipt) {
+          console.log(' - Transaction is mined - ' + '\n'
+            + 'Transaction Hash:', `${(await tx).hash
+          }\n` + `Block Number: ${
+            (await receipt).blockNumber}\n`
+            + `Navigate to https://goerli.etherscan.io/txn/${
+              (await tx).hash}`, 'to see your transaction');
+        } else {
+          console.log('Error submitting transaction');
+        }
 
         console.log('SUCCESS! TX MINED');
       }));
