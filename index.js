@@ -23,6 +23,8 @@ const provider = new ethers.providers.InfuraProvider('goerli', process.env.INFUR
 // Set up our wallet with the private key in `.env` and our Infura provider
 const wallet = new ethers.Wallet(privateKey, provider);
 
+// You can read about how the price is calculated here
+// https://github.com/bt3gl-labs/bdex-AMM-Arbitrage#how-the-price-is-calculated
 function calculatePrice(t1Balance, t2Balance, quantity) {
   const CONSTANT_PRODUCT = t1Balance * t2Balance;
   const CURRENT_PRICE = t2Balance / t1Balance;
