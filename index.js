@@ -110,6 +110,8 @@ const runBot = async () => {
           gasLimit,
         };
 
+        // TODO: Work out how much to swap here? If we find there is a profitable trade
+        // we need to figure out the amount to swap.
         const tx = await sushi.swap(
           !profitable ? DAI_TRADE : 0,
           profitable ? ETH_TRADE : 0,
