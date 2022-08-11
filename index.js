@@ -99,7 +99,6 @@ const runBot = async () => {
 
         const profitAfterTxFees = profit - gasCost - fees;
         const shouldSendTx = profitAfterTxFees > 0;
-        // eslint-disable-next-line no-console
         console.log('Profit left over after TX fees :', profitAfterTxFees);
 
         // don't trade if gasCost makes the trade unprofitable
