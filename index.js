@@ -6,8 +6,9 @@ const flashLoanerAddress = process.env.FLASH_LOANER;
 
 const { ethers } = require('ethers');
 
-//  Minimum value for constant product for a healthy pool
+//  Minimum value for constant product for a healthy pool.
 const MIN_HEALTHY_POOL = 100000000;
+// The quantity of Ethereum we use when calculating the impact of a buy or sell on a pool.
 const QUANTITY_ETH = 0.1;
 
 // Uniswap / Sushiswap ABIs
@@ -22,49 +23,49 @@ const provider = new ethers.providers.InfuraProvider('goerli', process.env.INFUR
 // Set up our wallet with the private key in `.env` and our Infura provider
 const wallet = new ethers.Wallet(privateKey, provider);
 
-function calculatePrice(t1_balance, t2_balance, quantity) {
-  const CONSTANT_PRODUCT = t1_balance * t2_balance;
-  const CURRENT_PRICE = t2_balance / t1_balance;
+function calculatePrice(t1Balance, t2Balance, quantity) {
+  const CONSTANT_PRODUCT = t1Balance * t2Balance;
+  const CURRENT_PRICE = t2Balance / t1Balance;
 
   // Calculate buy price
 
   //  How much WETH needs to remain in balance to keep the constant
-  const token1_balance_buy = CONSTANT_PRODUCT / (t2_balance + quantity);
+  const token1BalanceBuy = CONSTANT_PRODUCT / (t2Balance + quantity);
 
   //  How much WETH goes out to keep the constant
-  const t1_amount_out_buy = t1_balance - token1_balance_buy;
+  const t1AmountOutBuy = t1Balance - token1BalanceBuy;
 
   // Buy price to reflect the balances change
-  const buy_price = quantity / t1_amount_out_buy;
+  const buyPrice = quantity / t1AmountOutBuy;
 
   // Difference of buy price to current price
-  const buy_impact = 1 - (CURRENT_PRICE / buy_price);
+  const buyImpact = 1 - (CURRENT_PRICE / buyPrice);
 
   // calculate sell price
   // How much X to keep the balances constant
-  const token2_balance_buy = CONSTANT_PRODUCT / (t1_balance + quantity);
+  const token2BalanceBuy = CONSTANT_PRODUCT / (t1Balance + quantity);
 
   // How much X goes out that constant
-  const t2_amount_out_buy = t2_balance + token2_balance_buy;
+  const t2AmountOutBuy = t2Balance + token2BalanceBuy;
 
   // How the X balance reflects with the income WETH
-  const token1_balance_sell = CONSTANT_PRODUCT / (t2_balance - quantity);
+  const token1BalanceSell = CONSTANT_PRODUCT / (t2Balance - quantity);
 
   // The proportion of WETH in the new balance:
-  const t1_amount_in_sell = t1_balance + token1_balance_sell;
+  const t1AmountInSell = t1Balance + token1BalanceSell;
 
   // Sell price to reflect the balances change
-  const sell_price = t2_amount_out_buy / t1_amount_in_sell;
+  const sellPrice = t2AmountOutBuy / t1AmountInSell;
 
   //  Difference of sell price to current price
-  const sell_impact = 1 - (CURRENT_PRICE / sell_price);
+  const sellImpact = 1 - (CURRENT_PRICE / sellPrice);
 
   return {
     currentPrice: CURRENT_PRICE,
-    buyPrice: buy_price,
-    sellPrice: sell_price,
-    buyImpact: buy_impact,
-    sellImpact: sell_impact,
+    buyPrice,
+    sellPrice,
+    buyImpact,
+    sellImpact,
     constantProduct: CONSTANT_PRODUCT,
   };
 }
@@ -99,6 +100,8 @@ const runBot = async () => {
           UniswapV2Pair.abi, wallet,
         );
 
+        // TODO: I think we may need to convert these values into ETH from WEI
+        // https://github.com/bt3gl-labs/bdex-AMM-Arbitrage/blob/14696d79eac4486d74ea80d10fccedd26aa6ecd6/api/arbitrage.py#L126
         const sushiReserves = await sushi.getReserves();
         const uniswapReserves = await uniswap.getReserves();
 
@@ -188,8 +191,8 @@ const runBot = async () => {
         if (receipt) {
           console.log(' - Transaction is mined - ' + '\n'
             + 'Transaction Hash:', `${(await tx).hash
-            }\n` + `Block Number: ${
-              (await receipt).blockNumber}\n`
+          }\n` + `Block Number: ${
+            (await receipt).blockNumber}\n`
             + `Navigate to https://goerli.etherscan.io/txn/${
               (await tx).hash}`, 'to see your transaction');
         } else {

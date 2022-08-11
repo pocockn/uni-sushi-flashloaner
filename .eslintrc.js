@@ -14,5 +14,6 @@ module.exports = {
     'no-console': 'off',
     'camelcase' : 'off',
     'max-len': 'off',
+    'no-useless-concat': 'off'
   },
 };
