@@ -12,6 +12,7 @@ const tokens = [
 const testTokens = [
   { name: 'USDC', address: '0xD87Ba7A50B2E7E660f678A895E4B72E7CB4CCd9C', decimal: 8 },
   { name: 'ZRX', address: '0xe4E81Fa6B16327D4B78CFEB83AAdE04bA7075165', decimal: 18 },
+  { name: 'DAI', address: '0xdc31Ee1784292379Fbb2964b3B9C4124D8F89C60', decimal: 18 },
 ];
 
 const swapFrom = {

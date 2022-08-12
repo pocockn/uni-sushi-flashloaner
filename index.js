@@ -8,8 +8,9 @@ const { ethers } = require('ethers');
 
 //  Minimum value for constant product for a healthy pool.
 const MIN_HEALTHY_POOL = 100000000;
-// The quantity of Ethereum we use when calculating the impact of a buy or sell on a pool.
-const QUANTITY_ETH = 0.1;
+// The quantity of wei we use when calculating the impact of a buy or sell on a pool.
+// Equals 0.0001 ETH
+const QUANTITY_WEI = 100000000000000;
 
 // Uniswap / Sushiswap ABIs
 const UniswapV2Pair = require('./abis/IUniswapV2Pair.json');
@@ -43,7 +44,8 @@ function calculatePrice(t1Balance, t2Balance, quantity) {
   // Difference of buy price to current price
   const buyImpact = 1 - (CURRENT_PRICE / buyPrice);
 
-  // calculate sell price
+  // Calculate sell price
+
   // How much X to keep the balances constant
   const token2BalanceBuy = CONSTANT_PRODUCT / (t1Balance + quantity);
 
@@ -109,7 +111,9 @@ const runBot = async () => {
 
         const reserve0Sushi = Number(ethers.utils.formatUnits(sushiReserves[0], token.decimal));
         const reserve1Sushi = Number(ethers.utils.formatUnits(sushiReserves[1], token.decimal));
-        const sushiswapPriceData = calculatePrice(reserve0Sushi, reserve1Sushi, 0.1);
+        // TODO: Does the quantity need to be passed in as WEI or ETH?
+        const sushiswapPriceData = calculatePrice(reserve0Sushi, reserve1Sushi, QUANTITY_WEI);
+        // console.log("SUSHI ", token.name, sushiswapPriceData);
         if (sushiswapPriceData.constantProduct <= MIN_HEALTHY_POOL) {
           console.log('token: ', token.name, ' has an unbalanced pool for at least one token on Sushiswap, unable to arbitrage');
           return;
@@ -117,7 +121,8 @@ const runBot = async () => {
 
         const reserve0Uni = Number(ethers.utils.formatUnits(uniswapReserves[0], token.decimal));
         const reserve1Uni = Number(ethers.utils.formatUnits(uniswapReserves[1], token.decimal));
-        const uniswapPriceData = calculatePrice(reserve0Uni, reserve1Uni, QUANTITY_ETH);
+        const uniswapPriceData = calculatePrice(reserve0Uni, reserve1Uni, QUANTITY_WEI);
+        // console.log("UNI ", token.name, uniswapPriceData);
         if (uniswapPriceData.constantProduct <= MIN_HEALTHY_POOL) {
           console.log('token: ', token.name, ' has an unbalanced pool for at least one token on Uniswap, unable to arbitrage');
           return;
@@ -130,18 +135,18 @@ const runBot = async () => {
         // buying on Uniswap and selling on Sushiswap.
         const arbitrage = sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice;
         if (arbitrage < 0) {
-          console.log('no arbitrage opportunity on ', token.name, ' for quantity ', QUANTITY_ETH, 'ETH');
-          console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
-          console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
-          console.log(token.name, ` PROFIT ${arbitrage}`);
+          console.log('no arbitrage opportunity on ', token.name, ' for quantity ', ethers.utils.formatEther(QUANTITY_WEI), 'ETH');
+          console.log(token.name, ` UNISWAP PRICE BUY PRICE IN ETH ${sushiswapPriceData.buyPrice}`);
+          console.log(token.name, ` SUSHISWAP PRICE SELL PRICE IN ETH ${sushiswapPriceData.sellPrice}`);
+          console.log(token.name, ` PROFIT IN ETH ${arbitrage}`);
           return;
         }
 
-        console.log('arbitrage opportunity on ', token.name, ' for quantity ', QUANTITY_ETH, 'ETH');
-        console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
-        console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
+        console.log('arbitrage opportunity on ', token.name, ' for quantity ', ethers.utils.formatEther(QUANTITY_WEI), 'ETH');
+        console.log(token.name, ` UNISWAP PRICE BUY PRICE IN ETH ${uniswapPriceData.buyPrice}`);
+        console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${uniswapPriceData.sellPrice}`);
         console.log(token.name, `FEES ${fees}`);
-        console.log(token.name, ` PROFIT ${arbitrage}`);
+        console.log(token.name, ` PROFIT IN ETH ${arbitrage}`);
 
         const profitable = (uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice) - fees > 0;
         const profit = uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice - fees;
@@ -177,7 +182,7 @@ const runBot = async () => {
         // we need to figure out the amount to swap.
         const tx = await sushi.swap(
           0,
-          ethers.utils.parseEther('0.1'),
+          QUANTITY_WEI,
           flashLoanerAddress,
           ethers.utils.toUtf8Bytes('1'), options,
         );
