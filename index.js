@@ -139,15 +139,15 @@ const runBot = async () => {
         const arbitrage = sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice;
         if (arbitrage < 0) {
           console.log('no arbitrage opportunity on ', token.name, ' for quantity ', ethers.utils.formatEther(QUANTITY_WEI), 'ETH');
-          console.log(token.name, ` UNISWAP PRICE BUY PRICE IN ETH ${sushiswapPriceData.buyPrice}`);
-          console.log(token.name, ` SUSHISWAP PRICE SELL PRICE IN ETH ${sushiswapPriceData.sellPrice}`);
+          console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
+          console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
           console.log(token.name, ` PROFIT IN ETH ${arbitrage}`);
           return;
         }
 
         console.log('arbitrage opportunity on ', token.name, ' for quantity ', ethers.utils.formatEther(QUANTITY_WEI), 'ETH');
-        console.log(token.name, ` UNISWAP PRICE BUY PRICE IN ETH ${uniswapPriceData.buyPrice}`);
-        console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${uniswapPriceData.sellPrice}`);
+        console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
+        console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
         console.log(token.name, `FEES ${fees}`);
         console.log(token.name, ` PROFIT IN ETH ${arbitrage}`);
 
