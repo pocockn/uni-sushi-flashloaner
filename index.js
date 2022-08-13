@@ -109,6 +109,7 @@ const runBot = async () => {
 
         // TODO: I think we may need to convert these values into ETH from WEI
         // https://github.com/bt3gl-labs/bdex-AMM-Arbitrage/blob/14696d79eac4486d74ea80d10fccedd26aa6ecd6/api/arbitrage.py#L126
+        // Are these .getReserves() methods correct? The above project gets the token balances directly.
         const sushiReserves = await sushi.getReserves();
         const uniswapReserves = await uniswap.getReserves();
 
