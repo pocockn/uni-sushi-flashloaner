@@ -13,6 +13,8 @@ const testTokens = [
   { name: 'USDC', address: '0xD87Ba7A50B2E7E660f678A895E4B72E7CB4CCd9C', decimal: 8 },
   { name: 'ZRX', address: '0xe4E81Fa6B16327D4B78CFEB83AAdE04bA7075165', decimal: 18 },
   { name: 'DAI', address: '0xdc31Ee1784292379Fbb2964b3B9C4124D8F89C60', decimal: 18 },
+  { name: 'UNI', address: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', decimal: 18 },
+  { name: 'WBTC', address: '0xC04B0d3107736C32e19F1c62b2aF67BE61d63a05', decimal: 8 },
 ];
 
 const swapFrom = {
