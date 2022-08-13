@@ -116,7 +116,7 @@ const runBot = async () => {
         const reserve1Sushi = Number(ethers.utils.formatUnits(sushiReserves[1], token.decimal));
         // TODO: Does the quantity need to be passed in as WEI or ETH?
         const sushiswapPriceData = calculatePrice(reserve0Sushi, reserve1Sushi, QUANTITY_ETH);
-        // console.log("SUSHI ", token.name, sushiswapPriceData);
+        console.log('SUSHI ', token.name, sushiswapPriceData);
         if (sushiswapPriceData.constantProduct <= MIN_HEALTHY_POOL) {
           console.log('token: ', token.name, ' has an unbalanced pool for at least one token on Sushiswap, unable to arbitrage');
           return;
@@ -125,7 +125,7 @@ const runBot = async () => {
         const reserve0Uni = Number(ethers.utils.formatUnits(uniswapReserves[0], token.decimal));
         const reserve1Uni = Number(ethers.utils.formatUnits(uniswapReserves[1], token.decimal));
         const uniswapPriceData = calculatePrice(reserve0Uni, reserve1Uni, QUANTITY_ETH);
-        // console.log("UNI ", token.name, uniswapPriceData);
+        console.log('UNI ', token.name, uniswapPriceData);
         if (uniswapPriceData.constantProduct <= MIN_HEALTHY_POOL) {
           console.log('token: ', token.name, ' has an unbalanced pool for at least one token on Uniswap, unable to arbitrage');
           return;
