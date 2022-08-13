@@ -141,7 +141,7 @@ const runBot = async () => {
           console.log('no arbitrage opportunity on ', token.name, ' for quantity ', ethers.utils.formatEther(QUANTITY_WEI), 'ETH');
           console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
           console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
-          console.log(token.name, ` PROFIT IN ETH ${arbitrage}`);
+          console.log(token.name, ` PROFIT ${arbitrage}`);
           return;
         }
 
@@ -149,7 +149,7 @@ const runBot = async () => {
         console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
         console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
         console.log(token.name, `FEES ${fees}`);
-        console.log(token.name, ` PROFIT IN ETH ${arbitrage}`);
+        console.log(token.name, ` PROFIT ${arbitrage}`);
 
         const profitable = (uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice) - fees > 0;
         const profit = uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice - fees;
