@@ -151,8 +151,8 @@ const runBot = async () => {
         console.log(token.name, `FEES ${fees}`);
         console.log(token.name, ` PROFIT ${arbitrage}`);
 
-        const profitable = (uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice) - fees > 0;
-        const profit = uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice - fees;
+        const profitable = (sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice) - fees > 0;
+        const profit = sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice - fees;
 
         if (!profitable) return;
 
