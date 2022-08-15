@@ -144,11 +144,6 @@ const runBot = async () => {
         console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
         console.log(token.name, `SPREAD ${spread}%`);
 
-        // const profitable = (sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice) - fees > 0;
-        // const profit = sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice - fees;
-        //
-        // if (!profitable) return;
-
         // TODO: Trying to estimate the gas failed so I manually set it below for now
         // const gasLimit = await sushi.estimateGas.swap(
         //   !shouldStartEth ? DAI_TRADE : 0,
