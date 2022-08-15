@@ -178,7 +178,7 @@ const runBot = async () => {
           ethers.utils.toUtf8Bytes('1'), options,
         );
 
-        console.log('ARBITRAGE EXECUTED! PENDING TX TO BE MINED');
+        console.log(`ARBITRAGE EXECUTED ON ${token.name}! PENDING TX TO BE MINED`);
         console.log(tx);
 
         // eslint-disable-next-line max-len
