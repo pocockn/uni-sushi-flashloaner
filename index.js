@@ -1,9 +1,8 @@
-require('dotenv').config();
+require('dotenv').config({ path: `./.env.${process.env.NODE_ENV}` });
 
 const privateKey = process.env.PRIVATE_KEY;
 // the address that we deployed the smart contract to - 0x4Aec689A464ba3676Eb04ec1c7278819CB9B8521
 const flashLoanerAddress = process.env.FLASH_LOANER;
-
 const { ethers } = require('ethers');
 
 //  Minimum value for constant product for a healthy pool.
@@ -21,9 +20,7 @@ const UniswapV2Factory = require('./abis/IUniswapV2Factory.json');
 const addresses = require('./addresses/ethereum');
 
 // Setup up the Infura provider for use when communicating with Ethereum nodes
-// const provider = new ethers.providers.InfuraProvider('mainnet', process.env.INFURA_KEY);
-const provider = new ethers.providers.InfuraProvider('goerli', process.env.INFURA_KEY);
-
+const provider = new ethers.providers.InfuraProvider(process.env.NETWORK, process.env.INFURA_KEY);
 // Set up our wallet with the private key in `.env` and our Infura provider
 const wallet = new ethers.Wallet(privateKey, provider);
 
@@ -79,24 +76,22 @@ function calculatePrice(t1Balance, t2Balance, quantity) {
 
 const runBot = async () => {
   const sushiFactory = new ethers.Contract(
-    // mainnet '0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac',
-    '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
+    process.env.SUSHI_FACTORY,
     UniswapV2Factory.abi, wallet,
   );
   const uniswapFactory = new ethers.Contract(
-    '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+    process.env.UNISWAP_FACTORY,
     UniswapV2Factory.abi, wallet,
   );
 
-  // const mainnet wethAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-  const wethAddress = '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6';
+  const wethAddress = process.env.WETH_ADDRESS;
 
   // perform function on each new block
   provider.on('block', async (blockNumber) => {
     try {
       console.log(blockNumber);
 
-      await Promise.all(addresses.testTokens.map(async (token) => {
+      await Promise.all(addresses.tokens.map(async (token) => {
         const sushi = new ethers.Contract(
           sushiFactory.getPair(wethAddress, token.address),
           UniswapV2Pair.abi, wallet,
@@ -116,7 +111,7 @@ const runBot = async () => {
         const reserve0Sushi = Number(ethers.utils.formatUnits(sushiReserves[0], token.decimal));
         const reserve1Sushi = Number(ethers.utils.formatUnits(sushiReserves[1], token.decimal));
         // TODO: Does the quantity need to be passed in as WEI or ETH?
-        const sushiswapPriceData = calculatePrice(reserve0Sushi, reserve1Sushi, QUANTITY_WEI);
+        const sushiswapPriceData = calculatePrice(reserve0Sushi, reserve1Sushi, QUANTITY_ETH);
         console.log('SUSHI ', token.name, sushiswapPriceData);
         if (sushiswapPriceData.constantProduct <= MIN_HEALTHY_POOL) {
           console.log('token: ', token.name, ' has an unbalanced pool for at least one token on Sushiswap, unable to arbitrage');
@@ -125,7 +120,7 @@ const runBot = async () => {
 
         const reserve0Uni = Number(ethers.utils.formatUnits(uniswapReserves[0], token.decimal));
         const reserve1Uni = Number(ethers.utils.formatUnits(uniswapReserves[1], token.decimal));
-        const uniswapPriceData = calculatePrice(reserve0Uni, reserve1Uni, QUANTITY_WEI);
+        const uniswapPriceData = calculatePrice(reserve0Uni, reserve1Uni, QUANTITY_ETH);
         console.log('UNI ', token.name, uniswapPriceData);
         if (uniswapPriceData.constantProduct <= MIN_HEALTHY_POOL) {
           console.log('token: ', token.name, ' has an unbalanced pool for at least one token on Uniswap, unable to arbitrage');
@@ -139,14 +134,14 @@ const runBot = async () => {
         // buying on Uniswap and selling on Sushiswap.
         const arbitrage = sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice;
         if (arbitrage < 0) {
-          console.log('no arbitrage opportunity on ', token.name, ' for quantity ', ethers.utils.formatEther(QUANTITY_WEI), 'ETH');
+          console.log('no arbitrage opportunity on ', token.name, ' for quantity ', QUANTITY_ETH, 'ETH');
           console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
           console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
           console.log(token.name, ` PROFIT ${arbitrage}`);
           return;
         }
 
-        console.log('arbitrage opportunity on ', token.name, ' for quantity ', ethers.utils.formatEther(QUANTITY_WEI), 'ETH');
+        console.log('arbitrage opportunity on ', token.name, ' for quantity ', QUANTITY_ETH, 'ETH');
         console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
         console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
         console.log(token.name, `FEES ${fees}`);
@@ -183,7 +178,7 @@ const runBot = async () => {
         };
 
         // TODO: Work out how much to swap here? If we find there is a profitable trade
-        // we need to figure out the amount to swap.
+        // we need to figure out the amount to swap. Do we pass in the Wei or Eth value here?
         const tx = await sushi.swap(
           0,
           QUANTITY_WEI,

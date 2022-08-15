@@ -1,4 +1,4 @@
-.env
+.env.mainnet
 yarn.lock
 package-lock.json
 node_modules
