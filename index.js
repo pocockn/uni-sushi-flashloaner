@@ -12,7 +12,7 @@ const MIN_HEALTHY_POOL = 100000000;
 const QUANTITY_WEI = 100000000000000;
 // We need the ETH quantity when passing into our calculatePrice function.
 // TODO: Get an Eth number representation from the above QUANTITY_WEI
-const QUANTITY_ETH = 0.0001;
+const QUANTITY_ETH = 100;
 
 // Uniswap / Sushiswap ABIs
 const UniswapV2Pair = require('./abis/IUniswapV2Pair.json');
@@ -127,30 +127,27 @@ const runBot = async () => {
           return;
         }
 
-        // Uniswap charges a 0.3% fee on trades. We need 2 trades when performing
-        // the arbitrage so we calculate 0.6%. TODO - Fix this calculation and ensure its correct.
-        const fees = Math.abs((uniswapPriceData.buyPrice + sushiswapPriceData.sellPrice * 0.6) / 100);
         // TODO: Also check the other way around, this currently only checks if we make a profit
-        // buying on Uniswap and selling on Sushiswap.
-        const arbitrage = sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice;
-        if (arbitrage < 0) {
+        // buying on Uniswap and selling on Sushiswap. The spread is the difference between the sell and buy price
+        // minus the 0.6% fees for trading on both dexes. If it is positive then we should be able to take profit.
+        const spread = Math.abs((sushiswapPriceData.sellPrice / uniswapPriceData.buyPrice - 1) * 100) - 0.6;
+        if (spread < 0) {
           console.log('no arbitrage opportunity on ', token.name, ' for quantity ', QUANTITY_ETH, 'ETH');
           console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
           console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
-          console.log(token.name, ` PROFIT ${arbitrage}`);
+          console.log(token.name, `SPREAD ${spread}%`);
           return;
         }
 
         console.log('arbitrage opportunity on ', token.name, ' for quantity ', QUANTITY_ETH, 'ETH');
         console.log(token.name, ` UNISWAP PRICE BUY PRICE ${uniswapPriceData.buyPrice}`);
         console.log(token.name, ` SUSHISWAP PRICE SELL PRICE ${sushiswapPriceData.sellPrice}`);
-        console.log(token.name, `FEES ${fees}`);
-        console.log(token.name, ` PROFIT ${arbitrage}`);
+        console.log(token.name, `SPREAD ${spread}%`);
 
-        const profitable = (sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice) - fees > 0;
-        const profit = sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice - fees;
-
-        if (!profitable) return;
+        // const profitable = (sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice) - fees > 0;
+        // const profit = sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice - fees;
+        //
+        // if (!profitable) return;
 
         // TODO: Trying to estimate the gas failed so I manually set it below for now
         // const gasLimit = await sushi.estimateGas.swap(
@@ -161,13 +158,11 @@ const runBot = async () => {
         // );
 
         const gasLimit = 100000;
-
         const gasPrice = await wallet.getGasPrice();
-        const gasCost = Number(ethers.utils.formatEther(gasPrice));
+        const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(4250000006)));
 
-        const profitAfterTxFees = profit - gasCost - fees;
-        const shouldSendTx = profitAfterTxFees > 0;
-        console.log('Profit left over after TX fees :', profitAfterTxFees);
+        // const shouldSendTx = (sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice - gasPrice)
+        const shouldSendTx = (gasCost / QUANTITY_ETH) < spread;
 
         // don't trade if gasCost makes the trade unprofitable
         if (!shouldSendTx) return;

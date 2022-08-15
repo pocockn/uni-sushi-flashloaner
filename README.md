@@ -15,7 +15,7 @@ The bot calculates whether there is an arbitrage opportunity on each new Ethereu
 ## Token list
 
 If you switch between the mainnet and testnet you will need to modify which token array to map over on line 94 
-within `index.js`. 
+within `index.js`. This should be stored in config if possible.
 
 For the mainnet it should be:
 
