@@ -20,13 +20,13 @@ within `index.js`.
 For the mainnet it should be:
 
 ```javascript
-      await Promise.all(addresses.tokens.map(async (token) => { ...
+await Promise.all(addresses.tokens.map(async (token) => { ...
 ```
 
 Goerli testnet:
 
 ```javascript
-      await Promise.all(addresses.testTokens.map(async (token) => { ...
+await Promise.all(addresses.testTokens.map(async (token) => { ...
 ```
 
 ## Example Output
