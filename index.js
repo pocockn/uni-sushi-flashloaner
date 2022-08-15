@@ -161,7 +161,6 @@ const runBot = async () => {
         const gasPrice = await wallet.getGasPrice();
         const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(4250000006)));
 
-        console.log(`checking if tx ${token.name} is profitable with gas cost ${gasCost}`);
         const shouldSendTx = (gasCost / QUANTITY_ETH) < spread;
 
         // don't trade if gasCost makes the trade unprofitable
