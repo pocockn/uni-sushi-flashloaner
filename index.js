@@ -12,7 +12,7 @@ const MIN_HEALTHY_POOL = 100000000;
 const QUANTITY_WEI = 100000000000000;
 // We need the ETH quantity when passing into our calculatePrice function.
 // TODO: Get an Eth number representation from the above QUANTITY_WEI
-const QUANTITY_ETH = 100;
+const QUANTITY_ETH = 10;
 
 // Uniswap / Sushiswap ABIs
 const UniswapV2Pair = require('./abis/IUniswapV2Pair.json');
@@ -91,7 +91,7 @@ const runBot = async () => {
     try {
       console.log(blockNumber);
 
-      await Promise.all(addresses.tokens.map(async (token) => {
+      await Promise.all(addresses.testTokens.map(async (token) => {
         const sushi = new ethers.Contract(
           sushiFactory.getPair(wethAddress, token.address),
           UniswapV2Pair.abi, wallet,
@@ -161,11 +161,14 @@ const runBot = async () => {
         const gasPrice = await wallet.getGasPrice();
         const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(4250000006)));
 
-        // const shouldSendTx = (sushiswapPriceData.sellPrice - uniswapPriceData.buyPrice - gasPrice)
+        console.log(`checking if tx ${token.name} is profitable with gas cost ${gasCost}`);
         const shouldSendTx = (gasCost / QUANTITY_ETH) < spread;
 
         // don't trade if gasCost makes the trade unprofitable
-        if (!shouldSendTx) return;
+        if (!shouldSendTx) {
+          console.log(`trade for ${token.name} is unprofitable when including gas cost: ${gasCost / QUANTITY_ETH}`);
+          return;
+        }
 
         const options = {
           gasPrice,
