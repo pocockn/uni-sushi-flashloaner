@@ -146,15 +146,15 @@ const runBot = async () => {
 
         // TODO: Trying to estimate the gas failed so I manually set it below for now
         // const gasLimit = await sushi.estimateGas.swap(
-        //   !shouldStartEth ? DAI_TRADE : 0,
-        //   shouldStartEth ? ETH_TRADE : 0,
+        //   0,
+        //   QUANTITY_ETH,
         //   flashLoanerAddress,
         //   ethers.utils.toUtf8Bytes('1'),
         // );
 
-        const gasLimit = 100000;
+        const gasLimit = ethers.BigNumber.from(1000000).toHexString();
         const gasPrice = await wallet.getGasPrice();
-        const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(4250000006)));
+        const gasCost = Number(ethers.utils.formatEther(gasPrice.mul(gasLimit)));
 
         const shouldSendTx = (gasCost / QUANTITY_ETH) < spread;
 
@@ -173,7 +173,7 @@ const runBot = async () => {
         // we need to figure out the amount to swap. Do we pass in the Wei or Eth value here?
         const tx = await sushi.swap(
           0,
-          QUANTITY_WEI,
+          QUANTITY_ETH,
           flashLoanerAddress,
           ethers.utils.toUtf8Bytes('1'), options,
         );
